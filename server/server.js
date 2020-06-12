@@ -1,14 +1,42 @@
 var express = require('express');
 var app = express();
+var fs = require('fs');
 var http = require('http');
 var server = http.Server(app);
 var websocket = require('ws');
-var mysql = require('./db');
 var QRCode = require('qrcode');
+var ini = require('ini');
+var log4js = require("log4js");
+var yargs = require('yargs');
+var path = require("path");
 
+var argv = yargs.reset().option("c", {
+    alias: "config_file_path",
+    demand: true,
+    default: path.resolve(''),
+    description: "config file path"
+  }).help("h").alias("h", "help").argv;
+  
+  var Info = ini.parse(fs.readFileSync(argv.c + "/config.ini", "UTF-8"));
+  
+  // log
+  log4js.configure({
+    appenders: {
+      out: { type: 'stdout' },
+      day: {
+        type: 'dateFile', filename: argv.c + "/logs/date", alwaysIncludePattern: true, pattern: "-yyyy-MM-dd.log"
+      }
+    },
+    categories: {
+      default: { appenders: ['out', 'day'], level: Info.log },
+    }
+  });
+  
+var Log = log4js.getLogger();
+  
 // 小程序wx.login需要用到的参数
-var appid = "AppID(小程序ID)";
-var secret = "AppSecret(小程序密钥)";
+var appid =Info.appid;
+var secret = Info.secret;
 var grant_type = "authorization_code";
 
 var wss = new websocket.Server({
@@ -42,7 +70,7 @@ var socket_type = {
 // 创建websocket服务
 wss.on('connection', (ws, req) => {
     // 输出当前连接数
-    console.log('connected: ', wss.clients.size)
+    Log.info('connected: ', wss.clients.size)
     // socket客户端自动创建的唯一标识,也可以在客户端自己创建唯一标识发送到服务端
     // 自己创建的好处在于可以直接刷新,自动创建想刷新只有在客户端重启socket服务
     // 把req的key存在当前请求的ws上方便等下判断
@@ -50,7 +78,7 @@ wss.on('connection', (ws, req) => {
     // req.url: 判断socket连接,例如 当前小程序连接服务器地址为ws://192.168.0.100:8088?admin
     // 可区分小程序socket和登录socket 方便做不同的操作
     ws.type = socket_type[req.url];
-    console.log('type: ', ws.type);
+    Log.info('type: ', ws.type);
     if (ws.type != 'admin') {
         // 不是小程序连接,生成二维码返回
         QRCode.toDataURL(ws.key, function (err, img_url) {
@@ -77,7 +105,7 @@ wss.on('connection', (ws, req) => {
                 }))
             }
         });
-        console.log(number)
+        Log.info(number)
         //number为0表示不存在当前key匹配的客户端,给小程序发送key无效的信息
         if (!number) {
             ws.send('key值无效,登录失败.')
@@ -88,7 +116,11 @@ wss.on('connection', (ws, req) => {
 
     ws.on('close', _ => {
         // 有客户端关闭连接,输出目前连接数
-        console.log('someone closed connection, connected:', wss.clients.size)
+        Log.info('someone closed connection, connected:', wss.clients.size)
+    })
+
+    ws.on('error',_=>{
+
     })
 });
 
@@ -113,28 +145,7 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
-// 检查小程序使用者的OPEN_ID是否在数据库存在,不存在则无权使用
-app.get('/api/wx/checkAuth', (req, res) => {
-    var OPEN_ID = req.query.OPEN_ID;
-    mysql.checkAuth(OPEN_ID).then(result => {
-        if (result.length > 0) {
-            res.json({
-                code: 200,
-                success: true,
-                result
-            });
-        } else {
-            res.json({
-                code: 109,
-                success: false,
-                result
-            });
-        }
-    }, err => {
-        res.end(err);
-    })
-})
 
-server.listen(8088, '0.0.0.0', function () {
-    console.log('listening on *:8088');
+server.listen(Info.port, '0.0.0.0', function () {
+    Log.info('listening on *:'+Info.port);
 });

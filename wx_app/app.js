@@ -30,8 +30,7 @@ App({
   globalData: {
     userInfo: null,
     config: {
-      domain: 'http://192.168.0.100:8088',
-      socket: 'ws://192.168.0.100:8088'
+      socket: 'ws://192.168.0.199:8088'
     }
   },
   login(callback) {

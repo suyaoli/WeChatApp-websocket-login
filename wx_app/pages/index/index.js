@@ -115,32 +115,16 @@ Page({
   // 判断是否有权限扫码登录
   checkAuth(e) {
     console.log('OPEN_ID:', e.target.dataset.openid);
-    wx.request({
-      url: app.globalData.config.domain + '/api/wx/checkAuth',
-      data: {
-        OPEN_ID: e.target.dataset.openid
-      },
-      success: (res) => {
-        if (res.data.success) {
-          //socket断开需重新连接
-          if (!this.data.socketConnected) {
-            this.connectSocket(this.scanCode);
-            return false;
-          } else {
-            this.scanCode();
-          }
-        } else {
-          wx.setClipboardData({
-            data: e.target.dataset.openid,
-            success: function (res) {
-              wx.showToast({
-                title: '您暂无权限.',
-              });
-            }
-          })
-        }
-      }
-    })
+
+    //socket断开需重新连接
+    if (!this.data.socketConnected) {
+      this.connectSocket(this.scanCode);
+      return false;
+    } else {
+      this.scanCode();
+    }
+
+
   },
   // socket相关操作
   connectSocket(callback) {
