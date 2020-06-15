@@ -9,7 +9,7 @@
 	},
 	"compileType": "miniprogram",
 	"libVersion": "1.6.0",
-	"appid": "wx8d4e62965f1fc18f",
+	"appid": "",
 	"projectname": "websocket-login",
 	"simulatorType": "wechat",
 	"simulatorPluginLibVersion": {},

@@ -30,7 +30,7 @@ App({
   globalData: {
     userInfo: null,
     config: {
-      socket: 'ws://192.168.0.199:8088'
+      socket: 'wss://www.duiduibang.com/websocket'
     }
   },
   login(callback) {
